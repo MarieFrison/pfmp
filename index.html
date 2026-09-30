@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prêt·e pour la PFMP !</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one-screen game — a "badge d'accès" hero, then a vertical parcours of 5 étapes, then question cards with a sliding feedback drawer. */
+:root{
+  --bg:#EEF2F6; --surface:#FFFFFF; --surface-2:#E3E9F0; --ink:#12213A; --muted:#55657D;
+  --line:#C9D3DF; --brand:#1C3F7A; --brand-ink:#FFFFFF; --hivis:#F5C518; --hivis-ink:#1B1A10;
+  --ok:#1E8A5A; --ok-soft:#D8F1E4; --ko:#D2463A; --ko-soft:#FBE1DE;
+  --shadow:0 1px 2px rgba(18,33,58,.06),0 12px 30px -12px rgba(18,33,58,.25);
+  --f-display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D1524; --surface:#16213A; --surface-2:#1E2B47; --ink:#E8EEF7; --muted:#9AA9C0;
+  --line:#2B3A5A; --brand:#7FA6F0; --brand-ink:#0D1524; --hivis:#F5C518; --hivis-ink:#1B1A10;
+  --ok:#4CC98E; --ok-soft:#153A2B; --ko:#F07A6E; --ko-soft:#43201D;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 34px -12px rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1524; --surface:#16213A; --surface-2:#1E2B47; --ink:#E8EEF7; --muted:#9AA9C0;
+  --line:#2B3A5A; --brand:#7FA6F0; --brand-ink:#0D1524; --hivis:#F5C518; --hivis-ink:#1B1A10;
+  --ok:#4CC98E; --ok-soft:#153A2B; --ko:#F07A6E; --ko-soft:#43201D;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 34px -12px rgba(0,0,0,.6); color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--hivis);outline-offset:3px}
+h1,h2,h3{font-family:var(--f-display);line-height:1.1;text-wrap:balance;margin:0}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:20px 60px}
+.screen{animation:screenIn .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes screenIn{from{transform:translateY(14px)}to{transform:none}}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5em;padding:.85em 1.4em;border-radius:12px;font-weight:700;
+  background:var(--brand);color:var(--brand-ink);box-shadow:0 4px 0 0 color-mix(in srgb,var(--brand) 55%,#000);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 0 0 color-mix(in srgb,var(--brand) 55%,#000)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 0 color-mix(in srgb,var(--brand) 55%,#000)}
+.btn.hv{background:var(--hivis);color:var(--hivis-ink);box-shadow:0 4px 0 0 #B08A00}
+.btn.ghost{background:var(--surface);color:var(--ink);box-shadow:0 4px 0 0 var(--line)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+
+/* ---------- Home ---------- */
+.home{display:grid;grid-template-columns:1.1fr .9fr;gap:28px;align-items:center;padding-top:24px}
+@media (max-width:640px){.home{grid-template-columns:1fr}.badge-stage{order:-1}}
+.eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.home h1{font-size:clamp(2.4rem,7vw,3.8rem);font-weight:800;letter-spacing:-.02em;margin:.25em 0 .35em}
+.home h1 .hl{background:linear-gradient(transparent 58%,var(--hivis) 58%, var(--hivis) 90%,transparent 90%);padding:0 .08em;
+  background-size:0% 100%;background-repeat:no-repeat;animation:hl 1s .5s cubic-bezier(.6,0,.2,1) forwards}
+@keyframes hl{to{background-size:100% 100%}}
+.home p.lead{color:var(--muted);font-size:1.08rem;max-width:44ch;margin:0 0 1.4em}
+.levels{display:grid;gap:10px;margin:0 0 12px}
+.lvl{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;text-align:left;padding:12px 14px;border-radius:14px;background:var(--surface);border:2px solid var(--line);transition:border-color .2s,transform .2s,background .2s;animation:optIn .45s both}
+.lvl:hover{transform:translateX(4px);border-color:var(--brand)}
+.lvl .code{font-family:var(--f-display);font-weight:800;font-size:1.05rem;min-width:5.2em;padding:.25em .6em;border-radius:8px;background:var(--surface-2);text-align:center;transition:background .2s,color .2s}
+.lvl .lname{font-size:.9rem;font-weight:600;min-width:0}
+.lvl .lmeta{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:3px;white-space:nowrap}
+.lvl .lmeta .star{width:14px;height:14px}
+.lvl.on{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 8%,var(--surface))}
+.lvl.on .code{background:var(--hivis);color:var(--hivis-ink)}
+.pitch{color:var(--muted);font-size:.95rem;margin:0 0 1.2em;max-width:46ch}
+.card-badge.flip{animation:flipB .6s cubic-bezier(.3,.7,.3,1.2)}
+@keyframes flipB{from{transform:rotateY(-180deg) scale(.9)}to{transform:none}}
+@media (max-width:420px){.lvl{grid-template-columns:auto 1fr}.lvl .lmeta{grid-column:2}}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 1.6em;padding:0;list-style:none}
+.facts li{font-size:.85rem;font-weight:600;padding:.35em .8em;border-radius:99px;background:var(--surface);border:1px solid var(--line)}
+
+.badge-stage{display:grid;place-items:center;min-height:330px;perspective:900px}
+.lanyard{position:relative;display:flex;flex-direction:column;align-items:center;transform-origin:50% 0;animation:swing 4s ease-in-out infinite}
+@keyframes swing{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.strap{width:26px;height:90px;background:repeating-linear-gradient(135deg,var(--brand) 0 10px,color-mix(in srgb,var(--brand) 70%,#fff) 10px 20px);border-radius:0 0 4px 4px}
+.clip{width:34px;height:18px;border-radius:5px;background:var(--muted);margin-top:-2px}
+.card-badge{width:220px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden;margin-top:-4px;
+  transform-style:preserve-3d;transition:transform .3s}
+.card-badge:hover{transform:rotateY(12deg) rotateX(4deg)}
+.card-badge .top{background:var(--hivis);color:var(--hivis-ink);padding:10px 14px;font-family:var(--f-mono);font-size:.72rem;font-weight:700;letter-spacing:.1em;display:flex;justify-content:space-between}
+.card-badge .body{padding:16px 14px 14px;display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center}
+.avatar{width:64px;height:64px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center}
+.card-badge .name{font-family:var(--f-display);font-weight:800;font-size:1.15rem}
+.card-badge .role{font-size:.8rem;color:var(--muted)}
+.barcode{height:28px;margin:0 14px 14px;background:repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 4px,var(--ink) 4px 5px,transparent 5px 8px,var(--ink) 8px 11px,transparent 11px 13px);opacity:.8;border-radius:2px}
+.card-badge .shine{position:absolute}
+.stamp{position:absolute;right:-18px;bottom:30px;transform:rotate(-14deg) scale(0);font-family:var(--f-display);font-weight:800;color:var(--ok);border:3px solid var(--ok);border-radius:8px;padding:.1em .5em;font-size:1.05rem;background:color-mix(in srgb,var(--surface) 85%,transparent);animation:stamp .45s 1.3s cubic-bezier(.3,1.6,.5,1) forwards}
+@keyframes stamp{to{transform:rotate(-14deg) scale(1)}}
+
+/* ---------- HUD ---------- */
+.hud{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.hud .spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:.4em;padding:.4em .8em;border-radius:99px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:.9rem}
+.pill .num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.pill.streak{transition:transform .2s}
+.pill.streak.hot{background:var(--hivis);color:var(--hivis-ink);border-color:transparent}
+.pill.bump{animation:bump .4s}
+@keyframes bump{40%{transform:scale(1.25)}}
+.iconbtn{padding:.45em .7em;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-weight:600;font-size:.88rem}
+
+/* ---------- Map ---------- */
+.map-head{margin-bottom:22px}
+.map-head h2{font-size:clamp(1.7rem,5vw,2.3rem)}
+.map-head p{color:var(--muted);margin:.4em 0 0}
+.road{position:relative;display:grid;gap:18px;padding-left:56px}
+.road::before{content:"";position:absolute;left:23px;top:24px;bottom:24px;width:4px;border-radius:4px;background:repeating-linear-gradient(var(--line) 0 10px,transparent 10px 18px)}
+.road .fill{position:absolute;left:23px;top:24px;width:4px;border-radius:4px;background:var(--hivis);height:0;transition:height 1s cubic-bezier(.6,0,.2,1)}
+.node{position:relative;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;text-align:left;width:100%;padding:16px 18px;border-radius:16px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);
+  transition:transform .2s,border-color .2s;animation:nodeIn .5s both}
+@keyframes nodeIn{from{transform:translateX(-18px)}to{transform:none}}
+.node:hover:not([disabled]){transform:translateX(6px);border-color:var(--brand)}
+.node[disabled]{opacity:.55;cursor:not-allowed;box-shadow:none}
+.node .dot{position:absolute;left:-50px;top:50%;width:40px;height:40px;margin-top:-20px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);border:3px solid var(--line);font-family:var(--f-mono);font-weight:700;font-size:.9rem}
+.node.done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
+.node.next .dot{background:var(--hivis);border-color:var(--hivis);color:var(--hivis-ink);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--hivis) 70%,transparent)}100%{box-shadow:0 0 0 16px transparent}}
+.node h3{font-size:1.15rem}
+.node .sub{color:var(--muted);font-size:.9rem}
+.stars{display:flex;gap:2px}
+.star{width:20px;height:20px}
+.star path{fill:var(--line)}
+.star.on path{fill:var(--hivis)}
+.node .tag{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- Question ---------- */
+.stagebar{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.stagebar .ttl{font-family:var(--f-display);font-weight:700;font-size:1.05rem}
+.dots{display:flex;gap:6px;flex:1;justify-content:flex-end}
+.dots i{display:block;width:28px;height:6px;border-radius:6px;background:var(--line);transition:background .3s}
+.dots i.cur{background:var(--brand)}
+.dots i.ok{background:var(--ok)}
+.dots i.ko{background:var(--ko)}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:var(--shadow);animation:cardIn .55s cubic-bezier(.2,.9,.2,1.05) both}
+@keyframes cardIn{from{transform:translateY(24px) scale(.97) rotate(-.6deg)}to{transform:none}}
+.qcard.shake{animation:shake .45s}
+@keyframes shake{20%{transform:translateX(-10px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(3px)}}
+.qtype{display:inline-block;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;background:var(--surface-2);padding:.3em .7em;border-radius:6px;color:var(--muted);margin-bottom:12px}
+.situation{font-size:.95rem;color:var(--muted);border-left:3px solid var(--hivis);padding-left:12px;margin:0 0 12px}
+.qcard h2{font-size:clamp(1.3rem,4vw,1.65rem);font-weight:700;margin-bottom:18px}
+.opts{display:grid;gap:10px}
+.opt{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:center;text-align:left;padding:14px 16px;border-radius:14px;border:2px solid var(--line);background:var(--surface);transition:border-color .15s,transform .15s,background .25s;animation:optIn .4s both}
+@keyframes optIn{from{transform:translateY(10px)}to{transform:none}}
+.opt:hover:not([disabled]){border-color:var(--brand);transform:translateY(-2px)}
+.opt .k{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:var(--surface-2);font-family:var(--f-mono);font-weight:700}
+.opt.ok{border-color:var(--ok);background:var(--ok-soft)}
+.opt.ok .k{background:var(--ok);color:#fff}
+.opt.ko{border-color:var(--ko);background:var(--ko-soft)}
+.opt.ko .k{background:var(--ko);color:#fff}
+.opt.dim{opacity:.5}
+.opt[disabled]{cursor:default}
+.tf{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tf .opt{grid-template-columns:1fr;justify-items:center;text-align:center;padding:22px 12px;font-family:var(--f-display);font-weight:800;font-size:1.4rem}
+
+/* swipe */
+.swipe-zone{position:relative;height:210px;margin:6px 0 16px}
+.scard{position:absolute;inset:0;margin:auto;width:min(100%,380px);height:180px;border-radius:18px;background:var(--surface);border:2px solid var(--line);box-shadow:var(--shadow);display:grid;place-items:center;text-align:center;padding:20px;
+  font-family:var(--f-display);font-weight:700;font-size:1.25rem;touch-action:none;user-select:none;cursor:grab;transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .35s}
+.scard.back{transform:translateY(12px) scale(.94);opacity:.7;pointer-events:none}
+.scard.back2{transform:translateY(24px) scale(.88);opacity:.4;pointer-events:none}
+.scard .hint{position:absolute;top:12px;font-family:var(--f-mono);font-size:.75rem;font-weight:700;letter-spacing:.08em;padding:.2em .6em;border-radius:6px;opacity:0;transition:opacity .15s}
+.scard .hint.l{left:12px;color:var(--ko);border:2px solid var(--ko)}
+.scard .hint.r{right:12px;color:var(--ok);border:2px solid var(--ok)}
+.scard.flash-ok{border-color:var(--ok)}
+.scard.flash-ko{border-color:var(--ko)}
+.swipe-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.swipe-btns .btn{width:100%}
+.btn.no{background:var(--ko);box-shadow:0 4px 0 0 color-mix(in srgb,var(--ko) 55%,#000);color:#fff}
+.btn.yes{background:var(--ok);box-shadow:0 4px 0 0 color-mix(in srgb,var(--ok) 55%,#000);color:#fff}
+.swipe-count{text-align:center;font-family:var(--f-mono);color:var(--muted);font-size:.85rem;margin-bottom:6px}
+.tally{display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.tally span{width:12px;height:12px;border-radius:50%;background:var(--line);transition:background .3s,transform .3s}
+.tally span.ok{background:var(--ok);transform:scale(1.2)}
+.tally span.ko{background:var(--ko);transform:scale(1.2)}
+
+/* order */
+.slots{display:grid;gap:8px;margin-bottom:14px}
+.slot{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:center;min-height:52px;padding:8px 12px;border-radius:12px;border:2px dashed var(--line);text-align:left;transition:border-color .2s,background .2s}
+.slot .k{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:var(--surface-2);font-family:var(--f-mono);font-weight:700}
+.slot.filled{border-style:solid;border-color:var(--brand);animation:pop .3s}
+.slot.ok{border-color:var(--ok);background:var(--ok-soft)}
+.slot.ko{border-color:var(--ko);background:var(--ko-soft)}
+@keyframes pop{50%{transform:scale(1.03)}}
+.pool{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chip{padding:.6em 1em;border-radius:99px;background:var(--surface-2);border:2px solid var(--line);font-weight:600;transition:transform .15s,opacity .2s}
+.chip:hover{transform:translateY(-2px);border-color:var(--brand)}
+.chip.used{opacity:.25;pointer-events:none}
+
+/* feedback drawer */
+.drawer{position:fixed;left:0;right:0;bottom:0;z-index:20;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:4px solid var(--ok);box-shadow:0 -12px 40px -10px rgba(0,0,0,.3);
+  transform:translateY(calc(100% + 60px));visibility:hidden;transition:transform .45s cubic-bezier(.2,.9,.25,1),visibility 0s .45s}
+.drawer.show{transform:none;visibility:visible;transition:transform .45s cubic-bezier(.2,.9,.25,1)}
+.drawer.bad{border-top-color:var(--ko)}
+.drawer .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center}
+@media (max-width:560px){.drawer .in{grid-template-columns:auto 1fr}.drawer .in .btn{grid-column:1/-1}}
+.drawer .ico{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--ok-soft);color:var(--ok)}
+.drawer.bad .ico{background:var(--ko-soft);color:var(--ko)}
+.drawer .verdict{font-family:var(--f-display);font-weight:800;font-size:1.25rem;color:var(--ok)}
+.drawer.bad .verdict{color:var(--ko)}
+.drawer .expl{font-size:.95rem;color:var(--ink);margin:.2em 0 0;max-width:62ch}
+.drawer .pts{font-family:var(--f-mono);font-weight:700;color:var(--ok);margin-left:.5em}
+.float-pts{position:fixed;z-index:30;font-family:var(--f-display);font-weight:800;font-size:1.6rem;color:var(--ok);pointer-events:none;animation:floatUp 1s ease-out forwards}
+@keyframes floatUp{from{transform:translate(-50%,0) scale(.6);opacity:1}to{transform:translate(-50%,-70px) scale(1.1);opacity:0}}
+
+/* ---------- Stage end / Final ---------- */
+.result{text-align:center;padding-top:20px}
+.result h2{font-size:clamp(1.8rem,6vw,2.6rem);margin:.3em 0 .2em}
+.result .big-stars{display:flex;justify-content:center;gap:10px;margin:18px 0}
+.result .big-stars .star{width:58px;height:58px;transform:scale(0);animation:starPop .5s cubic-bezier(.3,1.7,.5,1) forwards}
+@keyframes starPop{to{transform:scale(1)}}
+.result p{color:var(--muted);max-width:48ch;margin:0 auto 1.2em}
+.row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.medal{width:170px;height:170px;margin:10px auto 6px;position:relative;animation:medalIn .9s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes medalIn{from{transform:translateY(-60px) rotate(-30deg) scale(.4)}to{transform:none}}
+.medal .ray{position:absolute;inset:-30px;border-radius:50%;background:repeating-conic-gradient(color-mix(in srgb,var(--hivis) 40%,transparent) 0 10deg,transparent 10deg 20deg);animation:spin 14s linear infinite;z-index:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.medal svg{position:relative;z-index:1}
+.scoreline{font-family:var(--f-mono);font-size:2.4rem;font-weight:700;font-variant-numeric:tabular-nums}
+.recap{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;text-align:left;margin:26px 0}
+.recap .tip{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.recap .tip b{display:block;font-family:var(--f-display);font-size:1rem;margin-bottom:.2em}
+.recap .tip span{font-size:.9rem;color:var(--muted)}
+.stagetable{width:100%;border-collapse:collapse;margin:14px 0 6px;text-align:left;font-size:.95rem}
+.stagetable td{padding:10px 6px;border-bottom:1px solid var(--line)}
+.stagetable td:last-child{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+canvas#fx{position:fixed;inset:0;pointer-events:none;z-index:40}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+
+
+<canvas id="fx"></canvas>
+<main class="wrap" id="app" aria-live="polite"></main>
+<div class="drawer" id="drawer" role="status">
+  <div class="in">
+    <div class="ico" id="dIco"></div>
+    <div><div class="verdict" id="dVerdict"></div><p class="expl" id="dExpl"></p></div>
+    <button class="btn" id="dNext">Continuer</button>
+  </div>
+</div>
+
+<script>
+/* ================= CONTENU ================= */
+/* Questions communes réutilisées dans plusieurs niveaux */
+const Q = {
+  convention:{ t:"choice", situation:"Ta PFMP commence lundi prochain.", q:"Qui doit avoir signé la convention de PFMP avant ton premier jour ?",
+    opts:["Seulement toi et ton tuteur","Le lycée, l'entreprise, toi (et ton représentant légal si tu es mineur·e)","Personne, elle se signe à la fin","Uniquement le chef d'établissement"], a:1,
+    fb:"Sans convention signée par toutes les parties, tu ne peux pas commencer : c'est elle qui te couvre en cas d'accident." },
+  trajet:{ t:"tf", q:"Faire le trajet une fois avant le premier jour, c'est une perte de temps.", a:false,
+    fb:"Repérer le trajet évite le retard du premier jour, celui qu'on remarque le plus." },
+  arrivee:{ t:"choice", situation:"Rendez-vous fixé à 8 h 30.", q:"À quelle heure arrives-tu ?",
+    opts:["8 h 30 pile","Vers 8 h 15 – 8 h 20","8 h 40, le temps de trouver","7 h 30, pour être sûr·e"], a:1,
+    fb:"10 à 15 minutes d'avance : assez pour souffler et te présenter calmement, sans déranger l'équipe avant l'ouverture." },
+  presentation:{ t:"choice", q:"Tu arrives à l'accueil du magasin. Comment te présentes-tu ?",
+    opts:["« Salut, c'est moi le stagiaire. »","« Bonjour, je suis [Prénom Nom], élève en PFMP. J'ai rendez-vous avec [nom du tuteur]. »","Tu attends qu'on vienne te chercher","« Je viens pour le stage, c'est où ? »"], a:1,
+    fb:"Bonjour, prénom et nom, raison de ta venue, nom de ton contact : une présentation claire rassure tout de suite." },
+  attitude:{ t:"swipe", q:"Ton attitude le premier jour : bonne idée ou pas ?", left:"À éviter", right:"Bonne idée",
+    items:[{txt:"Noter les prénoms des collègues",r:1},{txt:"Garder ton téléphone à la main",r:0},{txt:"Sourire et dire bonjour à chacun",r:1},{txt:"Tutoyer tout le monde d'office",r:0},{txt:"Demander les horaires de pause",r:1}],
+    fb:"On vouvoie par défaut, on range son téléphone et on retient les prénoms : trois gestes simples qui comptent beaucoup." },
+  tenue:{ t:"tf", q:"La tenue n'a pas d'importance tant que je fais bien mon travail.", a:false,
+    fb:"En magasin, tu représentes l'enseigne. La tenue fait partie des règles, renseigne-toi avant le premier jour." },
+  retard:{ t:"choice", situation:"Ton bus est supprimé, tu seras en retard.", q:"Que fais-tu ?",
+    opts:["Rien, j'expliquerai en arrivant","Je préviens l'entreprise et le lycée dès que possible","J'envoie un message à un collègue","Je ne viens pas, ce sera plus simple"], a:1,
+    fb:"Un retard ou une absence se signale immédiatement, à l'entreprise et au lycée. Prévenir, c'est être fiable." },
+  consigne:{ t:"choice", q:"Ton tuteur te donne une consigne que tu n'as pas comprise.",
+    opts:["Tu fais comme tu peux","Tu attends qu'il revienne voir","Tu reformules pour vérifier : « Si j'ai bien compris, je dois… »","Tu demandes à un autre stagiaire"], a:2,
+    fb:"Reformuler montre que tu écoutes et évite les erreurs. Personne n'attend de toi que tu saches tout." },
+  discretion:{ t:"tf", situation:"En pause, un collègue parle du chiffre d'affaires du magasin.", q:"Je peux raconter ces informations à mes amis, ce n'est pas grave.", a:false,
+    fb:"Chiffres, clients, prix fournisseurs : ce que tu apprends reste dans l'entreprise. C'est la discrétion professionnelle." },
+  paes:{ t:"order", q:"Un client fait un malaise dans le magasin. Remets les actions dans l'ordre.",
+    items:["Protéger","Examiner","Alerter (15, 18 ou 112)","Secourir"],
+    fb:"Protéger, Examiner, Alerter, Secourir : c'est la démarche enseignée en formation SST." },
+  blessure:{ t:"tf", q:"Si je me coupe légèrement avec un cutter, pas besoin d'en parler.", a:false,
+    fb:"Toute blessure, même légère, se signale au tuteur et au lycée le jour même. C'est ce qui permet la déclaration d'accident." },
+  nuit:{ t:"choice", situation:"Tu as 16 ans.", q:"On te propose de rester jusqu'à 23 h pour finir l'inventaire.",
+    opts:["J'accepte, ça fera bonne impression","Je refuse poliment : le travail de nuit est interdit aux mineurs, sauf dérogations très encadrées","J'accepte si on me paie","Je reste sans rien dire au lycée"], a:1,
+    fb:"Les horaires sont fixés par la convention. Pour les mineurs, le travail de nuit est interdit en règle générale. En cas de doute, appelle le lycée." },
+  allocation:{ t:"tf", q:"Les lycéens professionnels reçoivent une allocation de l'État pour leurs semaines de PFMP.", a:true,
+    fb:"Depuis 2023, une allocation est versée pour chaque semaine de PFMP effectuée. Son montant dépend de ton année de formation." },
+  statut:{ t:"tf", q:"Pendant ma PFMP, je suis toujours élève de mon lycée.", a:true,
+    fb:"Tu restes sous statut scolaire : le lycée te suit, et ton professeur référent peut venir te voir en entreprise." },
+  charges:{ t:"choice", q:"Tu dois soulever un carton lourd dans la réserve. Quelle est la bonne posture ?",
+    opts:["Dos penché, jambes tendues","Jambes pliées, dos droit, charge près du corps","Le plus vite possible pour finir","Tirer le carton en le traînant d'une main"], a:1,
+    fb:"Ce sont les jambes qui travaillent, pas le dos. Et si c'est trop lourd, on demande de l'aide ou un transpalette." }
+};
+
+const LEVELS = {
+ cap:{ code:"CAP", name:"CAP Équipier polyvalent du commerce", role:"Élève de CAP · Commerce", pitch:"Réception, mise en rayon, caisse et accueil : les gestes du quotidien en magasin.",
+  stages:[
+   { title:"Avant le départ", sub:"Convention, trajet, sac du 1er jour", qs:[
+     Q.convention,
+     { t:"swipe", q:"Ton sac du premier jour : à prendre ou pas ?", left:"Inutile", right:"À prendre",
+       items:[{txt:"Ta convention et ton livret de suivi",r:1},{txt:"Un carnet et un stylo",r:1},{txt:"Des chaussures de sécurité si demandées",r:1},{txt:"Ta console de jeux",r:0},{txt:"Le numéro de ton tuteur",r:1},{txt:"Des écouteurs pour la journée",r:0}],
+       fb:"Carnet, documents, tenue, contacts : tu montres dès le début que tu es organisé·e." },
+     Q.trajet, Q.tenue ]},
+   { title:"Le jour J", sub:"Arrivée, présentation, attitude", qs:[ Q.arrivee, Q.presentation, Q.attitude, Q.consigne ]},
+   { title:"Réception & rayon", sub:"Livraison, rotation, dates", qs:[
+     { t:"order", q:"Un camion livre le magasin. Remets les étapes de la réception dans l'ordre.",
+       items:["Compter les colis et comparer au bon de livraison","Contrôler l'état des colis","Signer le bon (avec réserves si problème)","Ranger la marchandise en réserve"],
+       fb:"On ne signe jamais avant d'avoir vérifié : une fois signé sans réserve, le magasin accepte la livraison telle quelle." },
+     { t:"order", q:"Tu remplis un rayon de yaourts. Remets les gestes dans l'ordre (rotation des produits).",
+       items:["Sortir les produits déjà en rayon","Placer les nouveaux produits au fond","Remettre les anciens produits devant","Faire le facing (aligner les produits)"],
+       fb:"Premier entré, premier sorti : les produits aux dates les plus proches passent devant pour être vendus en premier." },
+     { t:"choice", q:"Un yaourt a dépassé sa date limite de consommation (DLC) d'un jour. Que fais-tu ?",
+       opts:["Je le laisse, un jour ce n'est rien","Je le retire du rayon et je préviens mon tuteur","Je le mets en promotion","Je le cache au fond du rayon"], a:1,
+       fb:"Un produit dont la DLC est dépassée ne peut plus être vendu : on le retire et on suit la procédure du magasin." },
+     { t:"swipe", q:"Mise en rayon : bonne pratique ou pas ?", left:"À éviter", right:"Bonne pratique",
+       items:[{txt:"Vérifier que chaque produit a son étiquette prix",r:1},{txt:"Laisser les cartons vides dans l'allée",r:0},{txt:"Tourner les étiquettes des produits vers le client",r:1},{txt:"Mettre un produit à une autre place faute de place",r:0},{txt:"Signaler une rupture à ton tuteur",r:1}],
+       fb:"Un rayon propre, étiqueté et bien rempli, c'est ce qui fait vendre. Et une allée encombrée est un risque de chute." } ]},
+   { title:"Client & caisse", sub:"Accueil, renseignement, encaissement", qs:[
+     { t:"choice", situation:"Tu mets en rayon. Un client s'approche.", q:"Quelle est la bonne réaction ?",
+       opts:["Je continue, je ne suis pas à la caisse","Je m'arrête, je le regarde et je dis « Bonjour, je peux vous aider ? »","Je lui montre du doigt l'accueil","J'attends qu'il parle en premier"], a:1,
+       fb:"Le client passe avant la mise en rayon. Un bonjour et un regard, c'est la base de l'accueil." },
+     { t:"choice", q:"Le client cherche la farine. Que fais-tu ?",
+       opts:["« Allée 4. »","Je l'accompagne jusqu'au rayon","« Je ne sais pas, je suis stagiaire. »","Je lui dis de demander à la caisse"], a:1,
+       fb:"L'accompagner, c'est plus poli et ça évite qu'il se perde. Si tu ne sais pas, tu trouves quelqu'un qui sait." },
+     { t:"choice", q:"Un achat fait 13,40 €. Le client te donne un billet de 20 €. Combien lui rends-tu ?",
+       opts:["7,60 €","6,60 €","6,40 €","7,40 €"], a:1,
+       fb:"20,00 − 13,40 = 6,60 €. Annonce la somme reçue puis compte la monnaie à voix haute : ça évite les erreurs." },
+     { t:"tf", q:"À la caisse, je dis « Bonjour », « Merci » et « Au revoir » à chaque client, même quand il y a du monde.", a:true,
+       fb:"C'est la dernière image que le client garde du magasin. Les formules de politesse ne se sautent jamais." } ]},
+   { title:"Sécurité & droits", sub:"Gestes, accident, horaires", qs:[ Q.charges, Q.paes, Q.blessure, Q.nuit ]}
+  ],
+  tips:[["Convention signée","Pas de PFMP sans elle : elle te protège."],["10 minutes d'avance","Le premier jour et tous les autres."],["Premier entré, premier sorti","Les dates les plus proches devant."],["Le client d'abord","On s'arrête, on regarde, on dit bonjour."],["Jambes pliées, dos droit","Et on demande de l'aide si c'est trop lourd."],["Protéger, Examiner, Alerter, Secourir","L'ordre à retenir en cas d'accident."]]
+ },
+ mrc:{ code:"2de MRC", name:"2de Métiers de la relation client", role:"Élève de 2de · Relation client", pitch:"Première PFMP : l'accueil, le téléphone et les bons réflexes face au client.",
+  stages:[
+   { title:"Préparer sa PFMP", sub:"Convention, entreprise, trajet", qs:[
+     Q.convention,
+     { t:"choice", q:"Avant de partir, qu'est-ce qui t'aidera le plus à bien démarrer ?",
+       opts:["Te renseigner sur l'entreprise, ses produits et ses clients","Attendre de voir sur place","Demander à un·e ami·e ce qu'il en pense","Rien, le tuteur expliquera tout"], a:0,
+       fb:"Connaître l'enseigne et ses clients te permet de poser de bonnes questions dès le premier jour." },
+     { t:"swipe", q:"Ton sac du premier jour : à prendre ou pas ?", left:"Inutile", right:"À prendre",
+       items:[{txt:"Ta convention et ton livret de suivi",r:1},{txt:"Un carnet pour noter",r:1},{txt:"La tenue demandée par l'enseigne",r:1},{txt:"Des écouteurs pour la journée",r:0},{txt:"Le numéro de ton tuteur",r:1}],
+       fb:"Carnet, documents, tenue, contacts : tu montres dès le début que tu es organisé·e." },
+     Q.trajet ]},
+   { title:"Premiers pas", sub:"Arrivée, présentation, tenue", qs:[ Q.arrivee, Q.presentation, Q.attitude, Q.tenue ]},
+   { title:"Accueillir le client", sub:"Première impression, téléphone", qs:[
+     { t:"choice", q:"Que rappelle la règle des « 4 × 20 » en accueil ?",
+       opts:["Il faut 20 minutes pour vendre un produit","Les 20 premières secondes, les 20 premiers mots, les 20 premiers pas et les 20 cm du visage comptent","Un client sur 20 revient","On sert 20 clients par heure"], a:1,
+       fb:"La première impression se joue très vite : regard, sourire, premiers mots, premiers gestes." },
+     { t:"swipe", q:"Face au client, ta posture : bonne ou pas ?", left:"À éviter", right:"Bonne posture",
+       items:[{txt:"Regarder le client dans les yeux",r:1},{txt:"Bras croisés derrière le comptoir",r:0},{txt:"Sourire en disant bonjour",r:1},{txt:"Mâcher un chewing-gum",r:0},{txt:"Se tenir droit·e, mains visibles",r:1},{txt:"Répondre « Ouais » ou « OK »",r:0}],
+       fb:"Le non-verbal parle avant toi : posture ouverte, sourire, vocabulaire soigné." },
+     { t:"order", q:"Le téléphone sonne au magasin. Remets les étapes de l'appel dans l'ordre.",
+       items:["Décrocher et présenter le magasin et ton prénom","Écouter la demande sans couper","Reformuler la demande","Répondre ou orienter vers la bonne personne","Prendre congé poliment"],
+       fb:"Au téléphone, le client ne te voit pas : ta voix et ta méthode font toute la différence." },
+     { t:"tf", q:"Si je ne connais pas la réponse, je peux dire « Je ne sais pas » et raccrocher.", a:false,
+       fb:"On dit plutôt : « Je me renseigne et je vous rappelle » ou on transmet à un collègue, en notant nom et numéro." } ]},
+   { title:"Savoir-être & équipe", sub:"Retards, consignes, client mécontent", qs:[
+     Q.retard, Q.consigne,
+     { t:"choice", situation:"Un client s'énerve : son article est en rupture.", q:"Quelle est la meilleure réaction ?",
+       opts:["Je lui dis que ce n'est pas ma faute","Je l'écoute sans l'interrompre, je reformule et je cherche une solution","Je pars chercher mon tuteur sans rien dire","Je hausse le ton pour qu'il se calme"], a:1,
+       fb:"Écouter, reformuler, proposer (commande, produit équivalent) : le client se sent pris au sérieux et se calme." },
+     Q.discretion ]},
+   { title:"Sécurité & droits", sub:"Gestes, accident, statut", qs:[ Q.charges, Q.paes, Q.statut, Q.allocation ]}
+  ],
+  tips:[["Convention signée","Pas de PFMP sans elle : elle te protège."],["La règle des 4 × 20","La première impression se joue en quelques secondes."],["Au téléphone","Présenter, écouter, reformuler, répondre, prendre congé."],["Client mécontent","Écouter, reformuler, proposer une solution."],["Prévenir tout de suite","Retard ou absence : entreprise + lycée."],["Protéger, Examiner, Alerter, Secourir","L'ordre à retenir en cas d'accident."]]
+ },
+ mcva:{ code:"1re MCVA", name:"1re Métiers du commerce et de la vente, option A", role:"Élève de 1re · Animation et gestion de l'espace commercial", pitch:"Merchandising, indicateurs, vente-conseil et animation : place à l'autonomie.",
+  stages:[
+   { title:"Préparer sa PFMP", sub:"Objectifs, enseigne, dossier", qs:[
+     Q.convention,
+     { t:"choice", q:"Pour préparer ta PFMP, quelle recherche est la plus utile ?",
+       opts:["Connaître l'enseigne, sa zone de chalandise et ses concurrents","Regarder uniquement les horaires d'ouverture","Lire les avis clients négatifs","Aucune, tout s'apprend sur place"], a:0,
+       fb:"Zone de chalandise, concurrents, clientèle : ce sont les bases pour analyser ton unité commerciale dans ton dossier." },
+     { t:"swipe", q:"Pour ton dossier et ton épreuve, qu'est-ce qui compte ?", left:"Pas utile", right:"Utile",
+       items:[{txt:"Noter chaque jour les activités réalisées",r:1},{txt:"Photographier une implantation (avec accord)",r:1},{txt:"Recopier le site de l'enseigne",r:0},{txt:"Relever des chiffres avec l'accord du tuteur",r:1},{txt:"Tout rédiger la veille de l'oral",r:0}],
+       fb:"Des traces datées et des chiffres autorisés rendent tes fiches d'activités solides." },
+     Q.tenue ]},
+   { title:"Espace commercial", sub:"Merchandising, implantation", qs:[
+     { t:"choice", q:"À quel niveau de linéaire un produit se vend-il le mieux ?",
+       opts:["Au sol","À hauteur des yeux","Tout en haut","Ça ne change rien"], a:1,
+       fb:"Le niveau des yeux est le plus vendeur : on y place souvent les produits à forte marge ou ceux qu'on veut pousser." },
+     { t:"choice", q:"Une allée du magasin est peu fréquentée (zone froide). Que proposes-tu ?",
+       opts:["Ne rien y mettre","Y placer une animation ou des produits d'appel pour attirer les clients","Y stocker les cartons","Y mettre les produits les plus chers"], a:1,
+       fb:"On « réchauffe » une zone froide avec des produits d'appel, une animation ou une signalétique attractive." },
+     { t:"swipe", q:"Implantation : bonne pratique ou pas ?", left:"À éviter", right:"Bonne pratique",
+       items:[{txt:"Faire le facing en fin de journée",r:1},{txt:"Laisser un trou en rayon sans le signaler",r:0},{txt:"Respecter le planogramme",r:1},{txt:"Mélanger les familles de produits",r:0},{txt:"Vérifier l'étiquetage des prix",r:1}],
+       fb:"Planogramme respecté, rayon plein et prix affichés : l'implantation est le premier vendeur du magasin." },
+     { t:"order", q:"Rotation des produits frais : remets les gestes dans l'ordre.",
+       items:["Sortir les produits déjà en rayon","Placer les nouveaux produits au fond","Remettre les anciens produits devant","Faire le facing"],
+       fb:"Premier entré, premier sorti : moins de casse et de démarque." } ]},
+   { title:"Gestion & indicateurs", sub:"Calculs, stocks, démarque", qs:[
+     { t:"choice", situation:"Samedi : 4 500 € de chiffre d'affaires, 150 clients passés en caisse.", q:"Quel est le panier moyen ?",
+       opts:["45 €","30 €","3 €","300 €"], a:1,
+       fb:"Panier moyen = CA ÷ nombre de clients = 4 500 ÷ 150 = 30 €." },
+     { t:"choice", situation:"200 personnes sont entrées dans le magasin, 60 ont acheté.", q:"Quel est le taux de transformation ?",
+       opts:["60 %","30 %","3,3 %","20 %"], a:1,
+       fb:"Taux de transformation = acheteurs ÷ visiteurs × 100 = 60 ÷ 200 × 100 = 30 %." },
+     { t:"choice", q:"Qu'appelle-t-on la « démarque inconnue » ?",
+       opts:["Une réduction de prix non affichée","Les pertes de stock dont on ne connaît pas l'origine (vol, erreur, casse non déclarée)","Une marque de produits inconnue","Un produit sans étiquette"], a:1,
+       fb:"On la mesure à l'inventaire : écart entre le stock théorique et le stock réel." },
+     { t:"tf", q:"Si je repère une rupture en rayon, j'attends l'inventaire pour la signaler.", a:false,
+       fb:"Une rupture, c'est une vente perdue. On la signale tout de suite pour déclencher une commande ou un réassort." } ]},
+   { title:"Vente & animation", sub:"Entretien de vente, objections", qs:[
+     { t:"order", q:"Remets les étapes de l'entretien de vente dans l'ordre.",
+       items:["Accueillir le client","Découvrir ses besoins","Présenter et argumenter","Traiter les objections","Conclure la vente","Prendre congé"],
+       fb:"Sans découverte des besoins, l'argumentation tombe à côté : c'est l'étape clé." },
+     { t:"choice", situation:"Le client dit : « C'est trop cher. »", q:"Quelle réponse est la plus professionnelle ?",
+       opts:["« Ah non, ce n'est pas cher. »","« Je comprends. Ce modèle dure deux fois plus longtemps : sur un an, il vous revient moins cher. »","« Allez voir ailleurs, alors. »","« Je peux vous faire −30 %. »"], a:1,
+       fb:"On accueille l'objection, puis on valorise le produit avec un avantage concret pour le client." },
+     { t:"tf", q:"Pendant une animation commerciale, le prix des produits doit rester affiché.", a:true,
+       fb:"L'affichage des prix est obligatoire en magasin, promotion ou pas, et l'ancien prix de référence doit être clair." },
+     { t:"swipe", q:"Pour réussir une animation commerciale :", left:"À éviter", right:"Bonne idée",
+       items:[{txt:"Fixer un objectif chiffré avant",r:1},{txt:"Improviser le jour même",r:0},{txt:"Prévoir du stock en réserve",r:1},{txt:"Mesurer les ventes après l'opération",r:1},{txt:"Bloquer une allée de circulation",r:0}],
+       fb:"Préparer, installer, animer, puis évaluer avec des chiffres : c'est ce que tu présenteras à l'examen." } ]},
+   { title:"Posture & droits", sub:"Autonomie, sécurité, statut", qs:[ Q.retard, Q.discretion, Q.paes, Q.allocation ]}
+  ],
+  tips:[["Convention signée","Pas de PFMP sans elle : elle te protège."],["Niveau des yeux","L'emplacement le plus vendeur du linéaire."],["Panier moyen","CA ÷ nombre de clients."],["Taux de transformation","Acheteurs ÷ visiteurs × 100."],["Découvrir avant d'argumenter","Les besoins du client guident la vente."],["Objection prix","Accueillir, puis valoriser un avantage concret."]]
+ }
+};
+const LEVEL_KEYS = ["cap","mrc","mcva"];
+
+/* ================= ÉTAT ================= */
+const fresh = () => ({score:0,streak:0,best:0,stageRes:[],unlocked:0});
+let S = { screen:"home", level:"cap", stage:0, q:0, results:{}, lv:{cap:fresh(),mrc:fresh(),mcva:fresh()} };
+const L = () => LEVELS[S.level];
+const P = () => S.lv[S.level];
+const $ = s => document.querySelector(s);
+const app = $("#app");
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const STAR = on => `<svg class="star ${on?'on':''}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg>`;
+const ICO_OK = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`;
+const ICO_KO = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]} return a };
+const starsFor = pct => pct>=.9?3:pct>=.6?2:pct>0?1:0;
+
+/* ================= HUD ================= */
+function hud(){
+  return `<div class="hud">
+    <button class="iconbtn" onclick="go('map')" aria-label="Retour au parcours">← Parcours</button>
+    <span class="spacer"></span>
+    <span class="pill streak ${P().streak>=3?'hot':''}" id="streak" title="Série de bonnes réponses">Série <span class="num">×${P().streak}</span></span>
+    <span class="pill" id="score" title="Points">XP <span class="num" id="scoreNum">${P().score}</span></span>
+  </div>`;
+}
+function animateScore(from,to){
+  const el=$("#scoreNum"); if(!el) return;
+  const t0=performance.now(), d=reduce?1:600;
+  const step=t=>{const p=Math.min(1,(t-t0)/d); el.textContent=Math.round(from+(to-from)*(1-Math.pow(1-p,3))); if(p<1) requestAnimationFrame(step)};
+  requestAnimationFrame(step);
+  $("#score").classList.remove("bump"); void $("#score").offsetWidth; $("#score").classList.add("bump");
+}
+
+/* ================= ÉCRANS ================= */
+function go(screen){ S.screen=screen; hideDrawer(); render(); window.scrollTo({top:0,behavior:reduce?'auto':'smooth'}); }
+
+function render(){
+  if(S.screen==="home") return renderHome();
+  if(S.screen==="map") return renderMap();
+  if(S.screen==="q") return renderQ();
+  if(S.screen==="stageEnd") return renderStageEnd();
+  if(S.screen==="final") return renderFinal();
+}
+
+function renderHome(){
+  const lv=L();
+  app.innerHTML = `<section class="screen home">
+    <div>
+      <div class="eyebrow">Période de formation en milieu professionnel</div>
+      <h1>Prêt·e pour la <span class="hl">PFMP</span>&nbsp;!</h1>
+      <p class="lead">Choisis ton niveau, puis relève 5 étapes pour vérifier que tu as les bons réflexes avant d'entrer en magasin.</p>
+      <div class="levels" role="radiogroup" aria-label="Choisis ton niveau">
+        ${LEVEL_KEYS.map((k,i)=>{const l=LEVELS[k], p=S.lv[k], st=p.stageRes.reduce((a,r)=>a+(r?r.stars:0),0);
+          return `<button class="lvl ${k===S.level?'on':''}" role="radio" aria-checked="${k===S.level}" data-k="${k}" style="animation-delay:${200+i*90}ms">
+            <span class="code">${l.code}</span><span class="lname">${l.name}</span>
+            <span class="lmeta">${st?`${STAR(1)} ${st}/15`:'Nouveau'}</span></button>`}).join('')}
+      </div>
+      <p class="pitch" id="pitch">${lv.pitch}</p>
+      <button class="btn hv" onclick="go('map')">${P().stageRes.some(Boolean)?'Reprendre':'Commencer'} le parcours ${lv.code} →</button>
+    </div>
+    <div class="badge-stage" aria-hidden="true">
+      <div class="lanyard">
+        <div class="strap"></div><div class="clip"></div>
+        <div class="card-badge" id="badge" style="position:relative">
+          <div class="top"><span>ACCÈS STAGIAIRE</span><span>${lv.code.toUpperCase()}</span></div>
+          <div class="body">
+            <div class="avatar"><svg width="44" height="44" viewBox="0 0 48 48"><circle cx="24" cy="18" r="9" fill="var(--brand)"/><path d="M7 44c2-10 9-15 17-15s15 5 17 15z" fill="var(--brand)"/><path d="M14 13a10 9 0 0120 0v2H14z" fill="var(--hivis)"/><rect x="12" y="13" width="24" height="3" rx="1.5" fill="var(--hivis)"/></svg></div>
+            <div><div class="name">Toi</div><div class="role">${lv.role}</div></div>
+          </div>
+          <div class="barcode"></div>
+          <div class="stamp">PRÊT·E ?</div>
+        </div>
+      </div>
+    </div>
+  </section>`;
+  app.querySelectorAll('.lvl').forEach(b=>b.onclick=()=>{
+    if(b.dataset.k===S.level) return;
+    S.level=b.dataset.k; renderHome();
+    const bd=$("#badge"); if(bd && !reduce){ bd.classList.add('flip'); }
+    app.querySelector('.home').style.animation='none';
+    app.querySelectorAll('.lvl').forEach(x=>x.style.animation='none');
+    app.querySelector('.lvl.on')?.focus({preventScroll:true});
+  });
+}
+
+function renderMap(){
+  const done = P().stageRes.filter(Boolean).length;
+  app.innerHTML = `<section class="screen">
+    <div class="hud"><button class="iconbtn" onclick="go('home')">← Changer de niveau</button><span class="spacer"></span>
+      <span class="pill">XP <span class="num">${P().score}</span></span></div>
+    <div class="map-head"><div class="eyebrow">Parcours ${L().code} · ${done}/5 étapes validées</div><h2>Choisis ta prochaine étape</h2>
+      <p>Chaque étape débloque la suivante. Vise les 3 étoiles !</p></div>
+    <div class="road" id="road"><div class="fill" id="roadFill"></div>
+      ${L().stages.map((st,i)=>{
+        const r=P().stageRes[i]; const locked=i>P().unlocked; const cls=r?'done':(i===P().unlocked?'next':'');
+        return `<button class="node ${cls}" style="animation-delay:${i*80}ms" ${locked?'disabled':''} onclick="startStage(${i})">
+          <span class="dot">${r?'✓':i+1}</span>
+          <span><span class="tag">Étape ${i+1}${locked?' · verrouillée':''}</span><h3>${st.title}</h3><span class="sub">${st.sub}</span></span>
+          <span class="stars">${[0,1,2].map(k=>STAR(r&&k<r.stars)).join('')}</span>
+        </button>`}).join('')}
+    </div>
+    ${done===5?`<div class="row" style="margin-top:24px"><button class="btn hv" onclick="go('final')">Voir mon badge final →</button></div>`:''}
+  </section>`;
+  requestAnimationFrame(()=>{
+    const nodes=[...document.querySelectorAll('.node')]; const idx=Math.min(P().unlocked,4);
+    const road=$("#road"), target=nodes[idx];
+    const h = target.offsetTop + target.offsetHeight/2 - 24;
+    setTimeout(()=>$("#roadFill").style.height = Math.max(0,h)+"px",150);
+  });
+}
+
+function startStage(i){ S.stage=i; S.q=0; S.results[i]=[]; go('q'); }
+
+function renderQ(){
+  const st=L().stages[S.stage], q=st.qs[S.q], res=S.results[S.stage]||[];
+  const typeLabel={choice:"Mise en situation",tf:"Vrai ou faux ?",swipe:"Trie les cartes",order:"Remets dans l'ordre"}[q.t];
+  app.innerHTML = `<section class="screen">
+    ${hud()}
+    <div class="stagebar"><span class="ttl">${S.stage+1}. ${st.title}</span>
+      <span class="dots">${st.qs.map((_,k)=>`<i class="${k<res.length?(res[k]>=.6?'ok':'ko'):(k===S.q?'cur':'')}"></i>`).join('')}</span></div>
+    <article class="qcard" id="qcard">
+      <span class="qtype">${typeLabel} · ${S.q+1}/${st.qs.length}</span>
+      ${q.situation?`<p class="situation">${q.situation}</p>`:''}
+      <h2>${q.q}</h2>
+      <div id="qbody"></div>
+    </article>
+  </section>`;
+  ({choice:renderChoice,tf:renderTF,swipe:renderSwipe,order:renderOrder})[q.t](q);
+}
+
+/* ---- Choix ---- */
+function renderChoice(q){
+  const b=$("#qbody");
+  b.innerHTML=`<div class="opts">${q.opts.map((o,i)=>`<button class="opt" style="animation-delay:${i*60}ms" data-i="${i}"><span class="k">${"ABCD"[i]}</span><span>${o}</span></button>`).join('')}</div>`;
+  b.querySelectorAll('.opt').forEach(btn=>btn.onclick=e=>{
+    const i=+btn.dataset.i, ok=i===q.a;
+    b.querySelectorAll('.opt').forEach((x,k)=>{x.disabled=true; if(k===q.a)x.classList.add('ok'); else if(k===i)x.classList.add('ko'); else x.classList.add('dim')});
+    answer(ok?1:0,q.fb,btn);
+  });
+}
+/* ---- Vrai/Faux ---- */
+function renderTF(q){
+  const b=$("#qbody");
+  b.innerHTML=`<div class="tf"><button class="opt" data-v="1">Vrai</button><button class="opt" data-v="0" style="animation-delay:60ms">Faux</button></div>`;
+  b.querySelectorAll('.opt').forEach(btn=>btn.onclick=()=>{
+    const v=btn.dataset.v==="1", ok=v===q.a;
+    b.querySelectorAll('.opt').forEach(x=>{x.disabled=true; const xv=x.dataset.v==="1"; if(xv===q.a)x.classList.add('ok'); else x.classList.add(ok?'dim':'ko')});
+    answer(ok?1:0,q.fb,btn);
+  });
+}
+/* ---- Swipe ---- */
+function renderSwipe(q){
+  const items=shuffle(q.items); let idx=0, good=0; const marks=[];
+  const b=$("#qbody");
+  b.innerHTML=`<div class="swipe-count" id="swc"></div><div class="swipe-zone" id="zone"></div>
+    <div class="swipe-btns"><button class="btn no" id="bL">← ${q.left}</button><button class="btn yes" id="bR">${q.right} →</button></div>
+    <div class="tally">${items.map(()=>'<span></span>').join('')}</div>`;
+  const zone=$("#zone");
+  function draw(){
+    $("#swc").textContent=`Carte ${Math.min(idx+1,items.length)} / ${items.length} · glisse ou utilise les boutons`;
+    zone.innerHTML=items.slice(idx,idx+3).map((it,k)=>`<div class="scard ${k===1?'back':k===2?'back2':''}" ${k===0?'id="top"':''} style="z-index:${3-k}">
+      ${k===0?`<span class="hint l">${q.left.toUpperCase()}</span><span class="hint r">${q.right.toUpperCase()}</span>`:''}${it.txt}</div>`).reverse().join('');
+    const top=$("#top"); if(top) drag(top);
+  }
+  function decide(dir){
+    if(idx>=items.length) return;
+    const it=items[idx], ok=(dir===1)===!!it.r, top=$("#top");
+    if(ok) good++;
+    document.querySelectorAll('.tally span')[idx].classList.add(ok?'ok':'ko');
+    if(!ok) marks.push(it);
+    top.classList.add(ok?'flash-ok':'flash-ko');
+    top.style.transition='transform .45s cubic-bezier(.3,.6,.3,1), opacity .45s';
+    top.style.transform=`translateX(${dir*140}%) rotate(${dir*22}deg)`; top.style.opacity='0';
+    if(ok && !reduce) burst(top.getBoundingClientRect(),12);
+    idx++;
+    setTimeout(()=>{ if(idx<items.length) draw(); else finish(); }, 380);
+  }
+  function finish(){
+    $("#bL").disabled=$("#bR").disabled=true;
+    zone.innerHTML=`<div class="scard" style="cursor:default"><div><div class="scoreline" style="font-size:2rem">${good}/${items.length}</div><div style="font-size:1rem;color:var(--muted);font-family:var(--f-body)">bien triées</div></div></div>`;
+    const extra = marks.length?` À revoir : ${marks.map(m=>`« ${m.txt} » (${m.r?q.right:q.left})`).join(', ')}.`:'';
+    answer(good/items.length, q.fb+extra, zone);
+  }
+  function drag(el){
+    let x0=null,dx=0;
+    el.onpointerdown=e=>{x0=e.clientX;el.setPointerCapture(e.pointerId);el.style.transition='none'};
+    el.onpointermove=e=>{ if(x0===null) return; dx=e.clientX-x0; el.style.transform=`translateX(${dx}px) rotate(${dx/14}deg)`;
+      el.querySelector('.hint.r').style.opacity=Math.max(0,dx/90); el.querySelector('.hint.l').style.opacity=Math.max(0,-dx/90)};
+    el.onpointerup=el.onpointercancel=()=>{ if(x0===null) return; x0=null;
+      if(Math.abs(dx)>90) decide(dx>0?1:-1); else {el.style.transition='';el.style.transform='';el.querySelectorAll('.hint').forEach(h=>h.style.opacity=0)} dx=0};
+  }
+  $("#bL").onclick=()=>decide(-1); $("#bR").onclick=()=>decide(1);
+  draw();
+}
+/* ---- Ordre ---- */
+function renderOrder(q){
+  const pool=shuffle(q.items.map((t,i)=>({t,i}))); const seq=[];
+  const b=$("#qbody");
+  function draw(){
+    b.innerHTML=`<div class="slots">${q.items.map((_,k)=>{const s=seq[k];return `<button class="slot ${s?'filled':''}" data-k="${k}" ${s?'':'disabled'} aria-label="Position ${k+1}"><span class="k">${k+1}</span><span>${s?s.t:'<span style="color:var(--muted)">Touche une étape ci-dessous</span>'}</span></button>`}).join('')}</div>
+      <div class="pool">${pool.map(p=>`<button class="chip ${seq.includes(p)?'used':''}" data-i="${p.i}">${p.t}</button>`).join('')}</div>
+      <button class="btn" id="val" ${seq.length<q.items.length?'disabled':''}>Valider l'ordre</button>`;
+    b.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{seq.push(pool.find(p=>p.i==c.dataset.i)); draw()});
+    b.querySelectorAll('.slot.filled').forEach(s=>s.onclick=()=>{seq.splice(+s.dataset.k,1); draw()});
+    const v=$("#val"); if(v) v.onclick=check;
+  }
+  function check(){
+    let good=0;
+    b.querySelectorAll('.slot').forEach((s,k)=>{s.disabled=true;s.onclick=null; const ok=seq[k].i===k; if(ok)good++; s.classList.add(ok?'ok':'ko')});
+    b.querySelectorAll('.chip').forEach(c=>c.disabled=true); $("#val").remove();
+    const all=good===q.items.length;
+    const expl = all?q.fb:`Le bon ordre : ${q.items.map((t,k)=>`${k+1}. ${t}`).join(' · ')}. ${q.fb}`;
+    answer(all?1:good/q.items.length*.5, expl, b.querySelector('.slots'));
+  }
+  draw();
+}
+
+/* ================= RÉPONSE & FEEDBACK ================= */
+function answer(ratio, expl, anchorEl){
+  const ok = ratio>=.6;
+  S.results[S.stage].push(ratio);
+  const before=P().score;
+  let gain=Math.round(100*ratio);
+  if(ok){ P().streak++; P().best=Math.max(P().best,P().streak); gain+=Math.min(P().streak-1,4)*20; }
+  else P().streak=0;
+  P().score+=gain; animateScore(before,P().score);
+  const sp=$("#streak"); if(sp){ sp.querySelector('.num').textContent='×'+P().streak; sp.classList.toggle('hot',P().streak>=3); sp.classList.remove('bump'); void sp.offsetWidth; sp.classList.add('bump'); }
+  const dots=document.querySelectorAll('.dots i'); if(dots[S.q]){dots[S.q].className=ok?'ok':'ko'}
+  const r=anchorEl.getBoundingClientRect();
+  if(gain>0) floatPts(`+${gain}`, r.left+r.width/2, r.top);
+  if(ok){ if(!reduce) burst(r, ratio===1?40:20); }
+  else { const c=$("#qcard"); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
+  const praise=["Excellent réflexe !","Parfait, c'est pro.","Bien vu !","Exactement.","Impeccable !"];
+  const partial="Pas mal, mais pas tout.";
+  const miss=["Pas tout à fait.","Presque… retiens bien ceci.","À revoir, mais c'est pour ça qu'on s'entraîne."];
+  showDrawer(ok, ratio===1?praise[Math.random()*praise.length|0]:ok?partial:miss[Math.random()*miss.length|0], expl, gain);
+}
+function showDrawer(ok,verdict,expl,gain){
+  const d=$("#drawer"); d.classList.toggle('bad',!ok);
+  $("#dIco").innerHTML=ok?ICO_OK:ICO_KO;
+  $("#dVerdict").innerHTML=`${verdict}${gain?`<span class="pts">+${gain} XP</span>`:''}`;
+  $("#dExpl").textContent=expl;
+  const last=S.q===L().stages[S.stage].qs.length-1;
+  $("#dNext").textContent=last?"Voir le bilan de l'étape":"Question suivante";
+  setTimeout(()=>{d.classList.add('show'); $("#dNext").focus({preventScroll:true})},250);
+}
+function hideDrawer(){ $("#drawer").classList.remove('show'); }
+$("#dNext").onclick=()=>{
+  hideDrawer();
+  const st=L().stages[S.stage];
+  setTimeout(()=>{
+    if(S.q<st.qs.length-1){ S.q++; render(); }
+    else {
+      const res=S.results[S.stage], pct=res.reduce((a,b)=>a+b,0)/res.length;
+      const prev=P().stageRes[S.stage];
+      P().stageRes[S.stage]={pct,stars:Math.max(starsFor(pct),prev?prev.stars:0)};
+      S.lastPct=pct;
+      if(S.stage===P().unlocked && P().unlocked<5) P().unlocked++;
+      go('stageEnd');
+    }
+  }, 200);
+};
+
+function renderStageEnd(){
+  const st=L().stages[S.stage], pct=S.lastPct, stars=starsFor(pct);
+  const msg = stars===3?"Tu maîtrises cette étape. Ton tuteur serait fier !":stars===2?"Solide ! Quelques détails à revoir et c'est parfait.":"Relis bien les explications et retente l'étape : c'est comme ça qu'on progresse.";
+  const lastStage=P().stageRes.filter(Boolean).length===5;
+  app.innerHTML=`<section class="screen result">
+    <div class="eyebrow">Étape ${S.stage+1} terminée</div>
+    <h2>${st.title}</h2>
+    <div class="big-stars">${[0,1,2].map(k=>STAR(k<stars).replace('class="star','style="animation-delay:'+(300+k*250)+'ms" class="star')).join('')}</div>
+    <div class="scoreline">${Math.round(pct*100)} %</div>
+    <p>${msg}</p>
+    <div class="row">
+      <button class="btn ghost" onclick="startStage(${S.stage})">Rejouer l'étape</button>
+      ${lastStage?`<button class="btn hv" onclick="go('final')">Voir mon badge final →</button>`:`<button class="btn" onclick="go('map')">Continuer le parcours →</button>`}
+    </div>
+  </section>`;
+  if(stars>=2 && !reduce) setTimeout(()=>confetti(stars===3?160:80),500);
+}
+
+function renderFinal(){
+  const pcts=P().stageRes.map(r=>r?r.pct:0), avg=pcts.reduce((a,b)=>a+b,0)/5;
+  const totalStars=P().stageRes.reduce((a,r)=>a+(r?r.stars:0),0);
+  const rank = avg>=.9?["Recrue idéale","Tu as tous les réflexes d'un·e professionnel·le. Ton badge est validé !"]
+             : avg>=.7?["Stagiaire fiable","Tu es prêt·e. Relis les points à retenir pour être au top."]
+             : avg>=.5?["Stagiaire en rodage","Les bases sont là. Rejoue les étapes les plus faibles avant le départ."]
+             : ["Badge en attente","Rejoue le parcours : chaque explication compte pour ton premier jour."];
+  app.innerHTML=`<section class="screen result">
+    <div class="eyebrow">Parcours ${L().code} terminé · ${totalStars}/15 étoiles</div>
+    <div class="medal"><div class="ray"></div>
+      <svg viewBox="0 0 170 170" width="170" height="170" aria-hidden="true">
+        <circle cx="85" cy="85" r="70" fill="var(--hivis)"/><circle cx="85" cy="85" r="58" fill="none" stroke="var(--hivis-ink)" stroke-width="2" stroke-dasharray="4 5" opacity=".5"/>
+        <path d="M85 42l11 23 25 3-18 17 5 25-23-12-23 12 5-25-18-17 25-3z" fill="var(--hivis-ink)"/>
+      </svg></div>
+    <h2>${rank[0]}</h2>
+    <p>${rank[1]}</p>
+    <div class="scoreline">${P().score} XP</div>
+    <p style="margin-top:.2em">Meilleure série : ×${P().best}</p>
+    <div style="max-width:520px;margin:0 auto;overflow-x:auto"><table class="stagetable">
+      ${L().stages.map((st,i)=>`<tr><td>${i+1}. ${st.title}</td><td>${[0,1,2].map(k=>STAR(P().stageRes[i]&&k<P().stageRes[i].stars)).join('').replace(/class="star/g,'style="width:16px;height:16px;vertical-align:-3px" class="star')}</td><td>${Math.round(pcts[i]*100)} %</td></tr>`).join('')}
+    </table></div>
+    <h3 style="margin-top:28px;font-size:1.4rem">Les 6 réflexes à emporter</h3>
+    <div class="recap">${L().tips.map((t,i)=>`<div class="tip" style="animation:optIn .4s ${i*80}ms both"><b>${t[0]}</b><span>${t[1]}</span></div>`).join('')}</div>
+    <div class="row"><button class="btn ghost" onclick="go('home')">Essayer un autre niveau</button><button class="btn ghost" onclick="go('map')">Revoir le parcours</button><button class="btn hv" onclick="resetGame()">Recommencer à zéro</button></div>
+  </section>`;
+  if(!reduce){ confetti(220); setTimeout(()=>confetti(120),900); }
+}
+function resetGame(){ S.lv[S.level]=fresh(); S.results={}; go("map"); }
+
+/* ================= EFFETS ================= */
+const cv=$("#fx"), cx=cv.getContext('2d'); let parts=[], raf=null;
+function size(){ cv.width=innerWidth*devicePixelRatio; cv.height=innerHeight*devicePixelRatio; cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0) }
+addEventListener('resize',size); size();
+function palette(){ const cs=getComputedStyle(document.documentElement); return ['--hivis','--brand','--ok','--ko'].map(v=>cs.getPropertyValue(v).trim()) }
+function spawn(x,y,n,spread,up){
+  const pal=palette();
+  for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, s=(Math.random()*.7+.3)*spread;
+    parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-(up||0),g:.18,w:6+Math.random()*6,h:4+Math.random()*5,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:pal[i%pal.length],life:1,shape:Math.random()<.3?'c':'r'}) }
+  if(!raf) loop();
+}
+function burst(rect,n){ spawn(rect.left+rect.width/2, rect.top+rect.height/2, n, 7, 3) }
+function confetti(n){ for(let k=0;k<n;k++) setTimeout(()=>spawn(Math.random()*innerWidth,-10,1,3,-2), k*6) ; }
+function loop(){
+  cx.clearRect(0,0,innerWidth,innerHeight);
+  parts.forEach(p=>{ p.vy+=p.g; p.vx*=.99; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr; p.life-=.006;
+    cx.save(); cx.globalAlpha=Math.max(0,Math.min(1,p.life*1.5)); cx.translate(p.x,p.y); cx.rotate(p.r); cx.fillStyle=p.c;
+    if(p.shape==='c'){cx.beginPath();cx.arc(0,0,p.w/2.5,0,7);cx.fill()} else cx.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.r*2))+1);
+    cx.restore(); });
+  parts=parts.filter(p=>p.life>0 && p.y<innerHeight+40);
+  raf = parts.length? requestAnimationFrame(loop) : (cx.clearRect(0,0,innerWidth,innerHeight), null);
+}
+function floatPts(txt,x,y){ const el=document.createElement('div'); el.className='float-pts'; el.textContent=txt; el.style.left=x+'px'; el.style.top=y+'px'; document.body.appendChild(el); setTimeout(()=>el.remove(),1000) }
+
+/* ================= DÉMARRAGE ================= */
+function start(data){ if(data && data.S && data.S.lv){ S=data.S; if(S.screen==='q') S.screen='map'; } render(); }
+window.claude?.hot?.snapshot?.(()=>({S}));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+
+</body>
+</html>
